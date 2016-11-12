@@ -19,6 +19,7 @@ public:
     explicit Dialog(QWidget *parent = 0);
     ~Dialog();
 
+
 private slots:
     void on_pushButton_clicked();
 
@@ -27,9 +28,10 @@ private:
     QStandardItemModel *model;
     QString fileName;
     QDomDocument document;
+    QDomDocument tempDoc;
     void ReadFile();
     void WriteFile();
-    void LoadXMLFile();
+    void LoadXMLFile(QDomDocument);
     void ReadLeaderboard();
     void AddEntryToModel(int);
     QString GetNodeValue(QString, int);

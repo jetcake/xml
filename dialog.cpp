@@ -10,15 +10,17 @@ Dialog::Dialog(QWidget *parent) :
 
     //create the model
     fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
-    model = new QStandardItemModel(1,0,this);
-    winnerCount = 4;
+    model = new QStandardItemModel(this);
+    winnerCount = 3;
 
     //ReadFile();
-    LoadXMLFile();
+    LoadXMLFile(document);
     ReadLeaderboard();
 
-    ui->treeView->setModel(model);
-    ui->treeView->expandAll();
+    ui->tableView->setModel(model);
+
+    //Set Header Label Texts Here
+    model->setHorizontalHeaderLabels(QString("NAME;SCORE;TIME;CHAOS").split(";"));
 }
 
 Dialog::~Dialog()
@@ -85,13 +87,13 @@ void Dialog::WriteFile()
         xmlBook.setAttribute("ID", i);
         xmlRoot.appendChild(xmlBook);
 
-       for(int h = 0; h < book->rowCount(); h++){
-           QStandardItem *chapter = book->child(h,0);
+        for(int h = 0; h < book->rowCount(); h++){
+            QStandardItem *chapter = book->child(h,0);
 
-           QDomElement xmlChapter = document.createElement("Chapter");
-           xmlChapter.setAttribute("Name", chapter->text());
-           xmlChapter.setAttribute("ID", h);
-           xmlRoot.appendChild(xmlChapter);
+            QDomElement xmlChapter = document.createElement("Chapter");
+            xmlChapter.setAttribute("Name", chapter->text());
+            xmlChapter.setAttribute("ID", h);
+            xmlRoot.appendChild(xmlChapter);
         }
     }
 
@@ -108,7 +110,7 @@ void Dialog::WriteFile()
 
 }
 
-void Dialog::LoadXMLFile()
+void Dialog::LoadXMLFile(QDomDocument doc)
 {
     //Load XML file
     QFile file(fileName);
@@ -116,7 +118,12 @@ void Dialog::LoadXMLFile()
     {
         bool isO = document.setContent(&file);
         file.close();
+
+        file.open(QIODevice::ReadOnly | QIODevice::Text);
+        bool isC = tempDoc.setContent(&file);
+
         qDebug() << isO << " is Document open ";
+        qDebug() << isC << " is CLONE Document open ";
     }
 }
 
@@ -132,16 +139,20 @@ void Dialog::ReadLeaderboard()
     QDomNode scoreNode;
     QList<int> winnerList;
 
+    //  LoadXMLFile(tempDoc);
+    QDomNodeList entryList = tempDoc.elementsByTagName("score");
+
     while (winnerList.length() < winnerCount) {
         int temp = 0;
 
         for (int x = 0; x < elementCount; ++x) {
-            scoreNode = document.elementsByTagName("score").at(x).firstChild();
+            scoreNode = entryList.at(x).firstChild();
 
             scoreList[x] = scoreNode.nodeValue().toInt();
-            qDebug() << scoreList[x];
+            // qDebug() << scoreList[x];
 
             if (scoreList[x] >  temp ) {
+                qDebug() << scoreList[x] << " mellan score och list ";
                 temp = scoreList[x];
                 elementId = x;
 
@@ -149,39 +160,46 @@ void Dialog::ReadLeaderboard()
                 qDebug() << "new big value: " << temp;
             }
         }
-         winnerList.append(elementId);
-         //Clears entry from list
-         scoreList[elementId] = 0;
-         AddEntryToModel(elementId);
-         winner.setNodeValue("0");
+
+        winnerList.append(elementId);
+        //Clears entry from list
+        scoreList[elementId] = 0;
+
+        winner.setNodeValue("0");
+        AddEntryToModel(elementId);
     }
 
-   //Debug
-   qDebug() << elementId << " highscore";
-   qDebug() << GetNodeValue("playerName", 4) << " winner name";
-   qDebug() << GetNodeValue("score", 4) << " winner score";
-   qDebug() << GetNodeValue("time", elementId) << " winner name";
-   qDebug() << GetNodeValue("chaos", elementId) << " winner name";
+    //Debug
+    qDebug() << elementId << " highscore";
+    qDebug() << GetNodeValue("playerName", 4) << " winner name";
+    qDebug() << GetNodeValue("score", 4) << " winner score";
+    qDebug() << GetNodeValue("time", elementId) << " winner name";
+    qDebug() << GetNodeValue("chaos", elementId) << " winner name";
 
-   //Adding to model
-//  foreach (int winnerID, winnerList) {
-//       AddEntryToModel(winnerID);
-//  }
+    //Adding to model
+      foreach (int winnerID, winnerList) {
+          qDebug() << winnerID;
+      }
+
+       qDebug() << model->item(1,0);
 }
 
 void Dialog::AddEntryToModel(int elementId)
 {
+    qDebug() << "addinge entry to model. ID:  " << elementId;
     QStandardItem *root = new QStandardItem(GetNodeValue("playerName", elementId));
-    model->appendRow(root);
+    QStandardItem *scoreItem = new QStandardItem(GetNodeValue("score", elementId));
+    QStandardItem *timeItem = new QStandardItem(GetNodeValue("time", elementId));
+    QStandardItem *chaosItem = new QStandardItem(GetNodeValue("chaos", elementId));
 
-    QStandardItem *scoreItem = new QStandardItem("Score: " + GetNodeValue("score", elementId));
-    root->appendRow(scoreItem);
 
-    QStandardItem *timeItem = new QStandardItem("Time: " + GetNodeValue("time", elementId));
-    root->appendRow(timeItem);
+    QList<QStandardItem*> *items = new QList<QStandardItem*>();
+    items->append(root);
+    items->append(scoreItem);
+    items->append(timeItem);
+    items->append(chaosItem);
 
-    QStandardItem *chaosItem = new QStandardItem("Chaos: " + GetNodeValue("chaos", elementId));
-    root->appendRow(chaosItem);
+    model->appendRow(*items);
 }
 
 QString Dialog::GetNodeValue(QString element, int i)
@@ -191,7 +209,7 @@ QString Dialog::GetNodeValue(QString element, int i)
 
 void Dialog::on_pushButton_clicked()
 {
-    //Save document
+    //Save document+
     WriteFile();
 }
 
