@@ -1,5 +1,6 @@
 #include "dialog.h"
 #include "ui_dialog.h"
+#include <list>
 
 Dialog::Dialog(QWidget *parent) :
     QDialog(parent),
@@ -10,10 +11,14 @@ Dialog::Dialog(QWidget *parent) :
     //create the model
     fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
     model = new QStandardItemModel(1,0,this);
+    winnerCount = 4;
 
-    ReadFile();
+    //ReadFile();
+    LoadXMLFile();
+    ReadLeaderboard();
 
     ui->treeView->setModel(model);
+    ui->treeView->expandAll();
 }
 
 Dialog::~Dialog()
@@ -28,9 +33,6 @@ void Dialog::ReadFile()
     model->appendRow(root);
 
 
-
-
-
     //Load XML file
     QFile file(fileName);
     if(file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -39,37 +41,6 @@ void Dialog::ReadFile()
         file.close();
         qDebug() << isO << " is Document open ";
     }
-
-    int elementCount =  document.elementsByTagName("score").count();
-    qDebug() << "elemnt count: " << elementCount;
-
-    int* scoreList = new int[elementCount];
-    int temp = 0;
-    int elementId;
-    QDomNode winner;
-    QDomNode scoreNode;
-
-    for (int x = 0; x < elementCount; ++x) {
-        scoreNode = document.elementsByTagName("score").at(x).firstChild();
-
-        scoreList[x] = scoreNode.nodeValue().toInt();
-        qDebug() << scoreList[x];
-
-        if (scoreList[x] >  temp ) {
-            temp = scoreList[x];
-            qDebug() << "new big value: " << temp;
-            elementId = x;
-
-           winner = scoreNode;
-        }
-    }
-
-   qDebug() << elementId << " highscore";
-   qDebug() << GetNodeValue("playerName", elementId) << " winner name";
-   qDebug() << GetNodeValue("score", elementId) << " winner name";
-   qDebug() << GetNodeValue("time", elementId) << " winner name";
-   qDebug() << GetNodeValue("chaos", elementId) << " winner name";
-
 
     //get XML root element
     QDomElement xmlRoot = document.firstChildElement();
@@ -137,6 +108,82 @@ void Dialog::WriteFile()
 
 }
 
+void Dialog::LoadXMLFile()
+{
+    //Load XML file
+    QFile file(fileName);
+    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        bool isO = document.setContent(&file);
+        file.close();
+        qDebug() << isO << " is Document open ";
+    }
+}
+
+void Dialog::ReadLeaderboard()
+{
+    int elementCount =  document.elementsByTagName("score").count();
+    qDebug() << "elemnt count: " << elementCount;
+
+    int* scoreList = new int[elementCount];
+
+    int elementId;
+    QDomNode winner;
+    QDomNode scoreNode;
+    QList<int> winnerList;
+
+    while (winnerList.length() < winnerCount) {
+        int temp = 0;
+
+        for (int x = 0; x < elementCount; ++x) {
+            scoreNode = document.elementsByTagName("score").at(x).firstChild();
+
+            scoreList[x] = scoreNode.nodeValue().toInt();
+            qDebug() << scoreList[x];
+
+            if (scoreList[x] >  temp ) {
+                temp = scoreList[x];
+                elementId = x;
+
+                winner = scoreNode;
+                qDebug() << "new big value: " << temp;
+            }
+        }
+         winnerList.append(elementId);
+         //Clears entry from list
+         scoreList[elementId] = 0;
+         AddEntryToModel(elementId);
+         winner.setNodeValue("0");
+    }
+
+   //Debug
+   qDebug() << elementId << " highscore";
+   qDebug() << GetNodeValue("playerName", 4) << " winner name";
+   qDebug() << GetNodeValue("score", 4) << " winner score";
+   qDebug() << GetNodeValue("time", elementId) << " winner name";
+   qDebug() << GetNodeValue("chaos", elementId) << " winner name";
+
+   //Adding to model
+//  foreach (int winnerID, winnerList) {
+//       AddEntryToModel(winnerID);
+//  }
+}
+
+void Dialog::AddEntryToModel(int elementId)
+{
+    QStandardItem *root = new QStandardItem(GetNodeValue("playerName", elementId));
+    model->appendRow(root);
+
+    QStandardItem *scoreItem = new QStandardItem("Score: " + GetNodeValue("score", elementId));
+    root->appendRow(scoreItem);
+
+    QStandardItem *timeItem = new QStandardItem("Time: " + GetNodeValue("time", elementId));
+    root->appendRow(timeItem);
+
+    QStandardItem *chaosItem = new QStandardItem("Chaos: " + GetNodeValue("chaos", elementId));
+    root->appendRow(chaosItem);
+}
+
 QString Dialog::GetNodeValue(QString element, int i)
 {
     return document.elementsByTagName(element).at(i).firstChild().nodeValue();
@@ -147,3 +194,4 @@ void Dialog::on_pushButton_clicked()
     //Save document
     WriteFile();
 }
+

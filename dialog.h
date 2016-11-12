@@ -29,7 +29,11 @@ private:
     QDomDocument document;
     void ReadFile();
     void WriteFile();
+    void LoadXMLFile();
+    void ReadLeaderboard();
+    void AddEntryToModel(int);
     QString GetNodeValue(QString, int);
+    int winnerCount;
 };
 
 #endif // DIALOG_H
