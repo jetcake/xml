@@ -34,6 +34,7 @@ private:
     void LoadXMLFile(QDomDocument);
     void ReadLeaderboard();
     void AddEntryToModel(int);
+    void TableSetup();
     QString GetNodeValue(QString, int);
     int winnerCount;
 };

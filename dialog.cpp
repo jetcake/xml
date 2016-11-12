@@ -11,16 +11,57 @@ Dialog::Dialog(QWidget *parent) :
     //create the model
     fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
     model = new QStandardItemModel(this);
-    winnerCount = 3;
+    winnerCount = 10;
 
     //ReadFile();
     LoadXMLFile(document);
     ReadLeaderboard();
 
     ui->tableView->setModel(model);
+    TableSetup();
 
+    ui->tableView->resizeColumnsToContents();
+    ui->tableView->resizeRowsToContents();
+
+
+
+    QImage image;
+    bool result = image.load( ":/Data/test.jpg" );
+
+     qDebug() << result << " is img loaded";
+
+     qWarning() << QFile::exists(":/Data/test.jpg");
+
+     QFileInfo fi(":/Data/test.jpg");
+     qWarning() << " permis " << fi.permissions();
+}
+
+void Dialog::TableSetup()
+{
     //Set Header Label Texts Here
     model->setHorizontalHeaderLabels(QString("NAME;SCORE;TIME;CHAOS").split(";"));
+
+    QFont font("Arial", 20, QFont::Bold);
+    ui->tableView->horizontalHeader()->setFont( font );
+    ui->tableView->setStyleSheet("QHeaderView {font: 14pt; color: blue;}");
+    ui->tableView->setStyleSheet("font: 30pt bold;"
+                                 " color: white;"
+                               //  " background-color: rgb(125,125,64);"
+                                  " background-color:  qlineargradient(x1: 0.5, y1: 0, x2: 0.5, y2: 1,stop: 0 #7892BB, stop: 1 black);"
+
+                             //    "background-image: url(/Data/Img_background.png;"
+                                 " selection-background-color: blue;"
+                                 "  border-style: inset;"
+                                 "  border-width: 3x;   "
+                                 "  border-radius: 2px; "
+                                 "  border-color: red; "
+                                 "  spacing: 1px; "
+                                 "  font: bold 14px;     "
+                                 "  min-width: 10em;     "
+                                 "  padding: 2px;");
+
+
+   // ui->tableView->setStyleSheet( "background-image: url( :/Data/Img_background.png )" );
 }
 
 Dialog::~Dialog()
@@ -201,6 +242,7 @@ void Dialog::AddEntryToModel(int elementId)
 
     model->appendRow(*items);
 }
+
 
 QString Dialog::GetNodeValue(QString element, int i)
 {
