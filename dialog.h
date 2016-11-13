@@ -19,9 +19,11 @@ public:
     explicit Dialog(QWidget *parent = 0);
     ~Dialog();
 
-
 private slots:
-    void on_pushButton_clicked();
+    void ShowContextMenu(const QPoint &pos);
+    void on_new_clicked();
+    void on_save_clicked();
+    void on_exit_clicked();
 
 private:
     Ui::Dialog *ui;
@@ -35,8 +37,10 @@ private:
     void ReadLeaderboard();
     void AddEntryToModel(int);
     void TableSetup();
+
     QString GetNodeValue(QString, int);
     int winnerCount;
+    bool isTableStylesheet;
 };
 
 #endif // DIALOG_H

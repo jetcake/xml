@@ -1,5 +1,6 @@
 #include "dialog.h"
 #include "ui_dialog.h"
+#include <QMenu>
 #include <list>
 
 Dialog::Dialog(QWidget *parent) :
@@ -11,17 +12,19 @@ Dialog::Dialog(QWidget *parent) :
     //create the model
     fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
     model = new QStandardItemModel(this);
+    ui->tableView->setModel(model);
+
     winnerCount = 10;
 
     //ReadFile();
-    LoadXMLFile(document);
-    ReadLeaderboard();
 
-    ui->tableView->setModel(model);
+    ReadLeaderboard();
     TableSetup();
 
-    ui->tableView->resizeColumnsToContents();
-    ui->tableView->resizeRowsToContents();
+    this->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(ShowContextMenu(const QPoint &)));
 
 
 
@@ -38,35 +41,86 @@ Dialog::Dialog(QWidget *parent) :
 
 void Dialog::TableSetup()
 {
+    qDebug() << "Table setup";
+
     //Set Header Label Texts Here
     model->setHorizontalHeaderLabels(QString("NAME;SCORE;TIME;CHAOS").split(";"));
 
-    QFont font("Arial", 20, QFont::Bold);
-    ui->tableView->horizontalHeader()->setFont( font );
-    ui->tableView->setStyleSheet("QHeaderView {font: 14pt; color: blue;}");
-    ui->tableView->setStyleSheet("font: 30pt bold;"
-                                 " color: white;"
-                               //  " background-color: rgb(125,125,64);"
-                                  " background-color:  qlineargradient(x1: 0.5, y1: 0, x2: 0.5, y2: 1,stop: 0 #7892BB, stop: 1 black);"
+    if (isTableStylesheet == false) {
+        QFont font("Arial", 30, QFont::Bold);
+        ui->tableView->horizontalHeader()->setFont( font );
+        ui->tableView->setStyleSheet("QHeaderView {font: 24pt; color: blue; border: 3px solid; }");
+        ui->tableView->setStyleSheet("font: 30pt bold;"
+                                     " color: white;"
+                                     " background-color:  qlineargradient(x1: 0.5, y1: 0, x2: 0.5, y2: 1,stop: 0 #7892BB, stop: 1 black);"
+                                     " selection-background-color: blue;"
+                                     "  border-style: inset;"
+                                     "  border-width: 10px;   "
+                                     "  border-radius: 5px; "
+                                     "  border-color: black; "
+                                     "  spacing: 10px; "
+                                     "  min-width: 10em;     "
+                                     "  padding: 50px;");
+        isTableStylesheet = true;
+    }
 
-                             //    "background-image: url(/Data/Img_background.png;"
-                                 " selection-background-color: blue;"
-                                 "  border-style: inset;"
-                                 "  border-width: 3x;   "
-                                 "  border-radius: 2px; "
-                                 "  border-color: red; "
-                                 "  spacing: 1px; "
-                                 "  font: bold 14px;     "
-                                 "  min-width: 10em;     "
-                                 "  padding: 2px;");
-
+    ui->tableView->resizeColumnsToContents();
+    ui->tableView->resizeRowsToContents();
 
    // ui->tableView->setStyleSheet( "background-image: url( :/Data/Img_background.png )" );
+                                   //  " background-color: rgb(125,125,64);"
 }
 
 Dialog::~Dialog()
 {
     delete ui;
+}
+
+void Dialog::ShowContextMenu(const QPoint &pos)
+{
+    qDebug() << " QPos: " << pos ;
+
+    QAction *newAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&New"), this);
+    newAct->setStatusTip(tr("new sth"));
+    connect(newAct, SIGNAL(triggered()), this, SLOT(on_new_clicked()));
+
+    QAction *saveAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Save"), this);
+    saveAct->setStatusTip(tr("save sth"));
+    connect(saveAct, SIGNAL(triggered()), this, SLOT(on_save_clicked()));
+
+    QAction *exitAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Exit"), this);
+    exitAct->setStatusTip(tr("exit sth"));
+    connect(exitAct, SIGNAL(triggered()), this, SLOT(on_exit_clicked()));
+
+    QMenu menu(this);
+    menu.addAction(newAct);
+    menu.addAction(saveAct);
+    menu.addAction(exitAct);
+
+    QPoint pt(pos);
+    menu.exec( QCursor::pos() );
+}
+
+void Dialog::on_new_clicked()
+{
+    qDebug() << "Clicked on new! ";
+
+    model->clear();
+    ReadLeaderboard();
+    TableSetup();
+
+}
+
+void Dialog::on_save_clicked()
+{
+     qDebug() << "Clicked on save! ";
+
+}
+
+void Dialog::on_exit_clicked()
+{
+     qDebug() << "Clicked on exit! ";
+     QApplication::quit();
 }
 
 
@@ -170,6 +224,8 @@ void Dialog::LoadXMLFile(QDomDocument doc)
 
 void Dialog::ReadLeaderboard()
 {
+    LoadXMLFile(document);
+
     int elementCount =  document.elementsByTagName("score").count();
     qDebug() << "elemnt count: " << elementCount;
 
@@ -243,15 +299,9 @@ void Dialog::AddEntryToModel(int elementId)
     model->appendRow(*items);
 }
 
-
 QString Dialog::GetNodeValue(QString element, int i)
 {
     return document.elementsByTagName(element).at(i).firstChild().nodeValue();
 }
 
-void Dialog::on_pushButton_clicked()
-{
-    //Save document+
-    WriteFile();
-}
 
