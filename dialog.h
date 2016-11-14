@@ -22,8 +22,10 @@ public:
 private slots:
     void ShowContextMenu(const QPoint &pos);
     void on_new_clicked();
+    void on_open_clicked();
     void on_save_clicked();
     void on_exit_clicked();
+    void on_file_choosed(QString);
 
 private:
     Ui::Dialog *ui;

@@ -1,5 +1,6 @@
 #include "dialog.h"
 #include "ui_dialog.h"
+#include "explorer.h"
 #include <QMenu>
 #include <list>
 
@@ -25,6 +26,8 @@ Dialog::Dialog(QWidget *parent) :
 
     connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
             this, SLOT(ShowContextMenu(const QPoint &)));
+
+
 
 
 
@@ -84,6 +87,10 @@ void Dialog::ShowContextMenu(const QPoint &pos)
     newAct->setStatusTip(tr("new sth"));
     connect(newAct, SIGNAL(triggered()), this, SLOT(on_new_clicked()));
 
+    QAction *openAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Open"), this);
+    openAct->setStatusTip(tr("open sth"));
+    connect(openAct, SIGNAL(triggered()), this, SLOT(on_open_clicked()));
+
     QAction *saveAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Save"), this);
     saveAct->setStatusTip(tr("save sth"));
     connect(saveAct, SIGNAL(triggered()), this, SLOT(on_save_clicked()));
@@ -94,6 +101,7 @@ void Dialog::ShowContextMenu(const QPoint &pos)
 
     QMenu menu(this);
     menu.addAction(newAct);
+    menu.addAction(openAct);
     menu.addAction(saveAct);
     menu.addAction(exitAct);
 
@@ -111,6 +119,21 @@ void Dialog::on_new_clicked()
 
 }
 
+void Dialog::on_open_clicked()
+{
+    qDebug() << "Clicked on Open! ";
+
+    Explorer e(this);
+    //Connect Explorer signal and dialog slot
+    connect(&e, SIGNAL(FileChoosed(QString)), this, SLOT(on_file_choosed(QString)));
+
+    e.exec();
+
+    model->clear();
+    ReadLeaderboard();
+    TableSetup();
+}
+
 void Dialog::on_save_clicked()
 {
      qDebug() << "Clicked on save! ";
@@ -122,6 +145,15 @@ void Dialog::on_exit_clicked()
      qDebug() << "Clicked on exit! ";
      QApplication::quit();
 }
+
+void Dialog::on_file_choosed(QString path)
+{
+    qDebug() << "File path recived: " << path;
+
+    fileName = path;
+}
+
+
 
 
 void Dialog::ReadFile()
