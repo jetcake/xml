@@ -28,6 +28,13 @@ Dialog::Dialog(QWidget *parent) :
             this, SLOT(ShowContextMenu(const QPoint &)));
 
 
+    connect(&watcher, SIGNAL(fileChanged(QString)),
+             this, SLOT(on_new_clicked()));
+
+
+
+    //TODO:     Open explorer when starting app
+
 
 
 
@@ -85,19 +92,23 @@ void Dialog::ShowContextMenu(const QPoint &pos)
 
     QAction *newAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&New"), this);
     newAct->setStatusTip(tr("new sth"));
-    connect(newAct, SIGNAL(triggered()), this, SLOT(on_new_clicked()));
+    connect(newAct, SIGNAL(triggered()),
+            this, SLOT(on_new_clicked()));
 
     QAction *openAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Open"), this);
     openAct->setStatusTip(tr("open sth"));
-    connect(openAct, SIGNAL(triggered()), this, SLOT(on_open_clicked()));
+    connect(openAct, SIGNAL(triggered()),
+            this, SLOT(on_open_clicked()));
 
     QAction *saveAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Save"), this);
     saveAct->setStatusTip(tr("save sth"));
-    connect(saveAct, SIGNAL(triggered()), this, SLOT(on_save_clicked()));
+    connect(saveAct, SIGNAL(triggered()),
+            this, SLOT(on_save_clicked()));
 
     QAction *exitAct = new QAction(QIcon(":/Resource/warning32.ico"), tr("&Exit"), this);
     exitAct->setStatusTip(tr("exit sth"));
-    connect(exitAct, SIGNAL(triggered()), this, SLOT(on_exit_clicked()));
+    connect(exitAct, SIGNAL(triggered()),
+            this, SLOT(on_exit_clicked()));
 
     QMenu menu(this);
     menu.addAction(newAct);
@@ -113,6 +124,7 @@ void Dialog::on_new_clicked()
 {
     qDebug() << "Clicked on new! ";
 
+    // TODO:    Reset table function
     model->clear();
     ReadLeaderboard();
     TableSetup();
@@ -128,14 +140,11 @@ void Dialog::on_open_clicked()
     connect(&e, SIGNAL(FileChoosed(QString)), this, SLOT(on_file_choosed(QString)));
 
     e.exec();
-
-    model->clear();
-    ReadLeaderboard();
-    TableSetup();
 }
 
 void Dialog::on_save_clicked()
 {
+    //Change to export email.
      qDebug() << "Clicked on save! ";
 
 }
@@ -148,13 +157,18 @@ void Dialog::on_exit_clicked()
 
 void Dialog::on_file_choosed(QString path)
 {
+
     qDebug() << "File path recived: " << path;
 
     fileName = path;
+    watcher.addPath(fileName);
+
+    qDebug() << "watcher.addPath: " << fileName;
+
+    model->clear();
+    ReadLeaderboard();
+    TableSetup();
 }
-
-
-
 
 void Dialog::ReadFile()
 {
@@ -256,6 +270,8 @@ void Dialog::LoadXMLFile(QDomDocument doc)
 
 void Dialog::ReadLeaderboard()
 {
+    // TODO:   Dont repeat last entry
+
     LoadXMLFile(document);
 
     int elementCount =  document.elementsByTagName("score").count();
@@ -268,7 +284,6 @@ void Dialog::ReadLeaderboard()
     QDomNode scoreNode;
     QList<int> winnerList;
 
-    //  LoadXMLFile(tempDoc);
     QDomNodeList entryList = tempDoc.elementsByTagName("score");
 
     while (winnerList.length() < winnerCount) {
@@ -278,19 +293,17 @@ void Dialog::ReadLeaderboard()
             scoreNode = entryList.at(x).firstChild();
 
             scoreList[x] = scoreNode.nodeValue().toInt();
-            // qDebug() << scoreList[x];
 
             if (scoreList[x] >  temp ) {
-                qDebug() << scoreList[x] << " mellan score och list ";
+
                 temp = scoreList[x];
                 elementId = x;
 
                 winner = scoreNode;
-                qDebug() << "new big value: " << temp;
             }
         }
-
         winnerList.append(elementId);
+
         //Clears entry from list
         scoreList[elementId] = 0;
 
@@ -298,19 +311,11 @@ void Dialog::ReadLeaderboard()
         AddEntryToModel(elementId);
     }
 
-    //Debug
-    qDebug() << elementId << " highscore";
-    qDebug() << GetNodeValue("playerName", 4) << " winner name";
-    qDebug() << GetNodeValue("score", 4) << " winner score";
-    qDebug() << GetNodeValue("time", elementId) << " winner name";
-    qDebug() << GetNodeValue("chaos", elementId) << " winner name";
-
     //Adding to model
       foreach (int winnerID, winnerList) {
-          qDebug() << winnerID;
+          qDebug() << "Adding entry to view: "<< winnerID << " " << GetNodeValue("playerName", winnerID);
       }
 
-       qDebug() << model->item(1,0);
 }
 
 void Dialog::AddEntryToModel(int elementId)
@@ -320,7 +325,6 @@ void Dialog::AddEntryToModel(int elementId)
     QStandardItem *scoreItem = new QStandardItem(GetNodeValue("score", elementId));
     QStandardItem *timeItem = new QStandardItem(GetNodeValue("time", elementId));
     QStandardItem *chaosItem = new QStandardItem(GetNodeValue("chaos", elementId));
-
 
     QList<QStandardItem*> *items = new QList<QStandardItem*>();
     items->append(root);

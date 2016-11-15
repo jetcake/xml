@@ -33,6 +33,7 @@ private:
     QString fileName;
     QDomDocument document;
     QDomDocument tempDoc;
+    QFileSystemWatcher watcher;
     void ReadFile();
     void WriteFile();
     void LoadXMLFile(QDomDocument);

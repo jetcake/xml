@@ -10,7 +10,7 @@ Explorer::Explorer(QWidget *parent) :
 
     QString sPath = "C:/Private/";
     dirmodel = new QFileSystemModel(this);
-    dirmodel->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs);
+    dirmodel->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Hidden);
     dirmodel->setRootPath(sPath);
     ui->treeView->setModel(dirmodel);
 
@@ -19,6 +19,8 @@ Explorer::Explorer(QWidget *parent) :
     filemodel->setRootPath(sPath);
     ui->listView->setModel(filemodel);
 
+
+    //TODO:     go to default (appdata) or last location
 }
 
 Explorer::~Explorer()
@@ -35,12 +37,15 @@ QString FileChoosed(QString path){
 void Explorer::on_treeView_clicked(const QModelIndex &index)
 {
 
+
     QString sPath = dirmodel->fileInfo(index).absoluteFilePath();
     ui->listView->setRootIndex(filemodel->setRootPath(sPath));
 }
 
 void Explorer::on_listView_doubleClicked(const QModelIndex &index)
 {
+     //TODO:     Remeber last path
+
     QString sPath = dirmodel->fileInfo(index).absoluteFilePath();
     qDebug() << "Open File: " + sPath;
 
