@@ -26,20 +26,23 @@ private slots:
     void on_save_clicked();
     void on_exit_clicked();
     void on_file_choosed(QString);
+    void on_file_updated();
 
 private:
     Ui::Dialog *ui;
     QStandardItemModel *model;
     QString fileName;
+    QString filePath;
     QDomDocument document;
     QDomDocument tempDoc;
     QFileSystemWatcher watcher;
     void ReadFile();
     void WriteFile();
-    void LoadXMLFile(QDomDocument);
+    bool LoadXMLFile(QDomDocument);
     void ReadLeaderboard();
     void AddEntryToModel(int);
     void TableSetup();
+    void OpenMessageBox();
 
     QString GetNodeValue(QString, int);
     int winnerCount;

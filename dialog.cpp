@@ -2,6 +2,7 @@
 #include "ui_dialog.h"
 #include "explorer.h"
 #include <QMenu>
+#include <QMessageBox>
 #include <list>
 
 Dialog::Dialog(QWidget *parent) :
@@ -10,14 +11,24 @@ Dialog::Dialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    QStringList locations2 = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+
+    foreach (QString var1, locations2) {
+        filePath  = var1;
+    }
+
+    filePath += "/AppData/LocalLow/Guru Games/";
+    fileName = "BlamdownLeaderBoard.bdlb";
+
+
+
+
     //create the model
-    fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
+    //fileName = "C:/Private/test/BlamdownLeaderBoard.bdlb";
     model = new QStandardItemModel(this);
     ui->tableView->setModel(model);
 
     winnerCount = 10;
-
-    //ReadFile();
 
     ReadLeaderboard();
     TableSetup();
@@ -27,13 +38,14 @@ Dialog::Dialog(QWidget *parent) :
     connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
             this, SLOT(ShowContextMenu(const QPoint &)));
 
-
     connect(&watcher, SIGNAL(fileChanged(QString)),
-             this, SLOT(on_new_clicked()));
+             this, SLOT(on_file_updated()));
 
 
 
     //TODO:     Open explorer when starting app
+
+
 
 
 
@@ -78,7 +90,25 @@ void Dialog::TableSetup()
     ui->tableView->resizeRowsToContents();
 
    // ui->tableView->setStyleSheet( "background-image: url( :/Data/Img_background.png )" );
-                                   //  " background-color: rgb(125,125,64);"
+    //  " background-color: rgb(125,125,64);"
+}
+
+void Dialog::OpenMessageBox()
+{
+   QMessageBox msgBox;
+    msgBox.setText("No Leaderboard file");
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Error", "No leaderboard file was found", QMessageBox::Ok|QMessageBox::Abort);
+
+    if (reply == QMessageBox::Ok) {
+        qDebug() << "Yes Was clicked";
+        QApplication::quit();
+    }
+    else {
+         qDebug() << "Yes Was !!NOT!! clicked";
+         on_exit_clicked();
+    }
 }
 
 Dialog::~Dialog()
@@ -122,7 +152,22 @@ void Dialog::ShowContextMenu(const QPoint &pos)
 
 void Dialog::on_new_clicked()
 {
-    qDebug() << "Clicked on new! ";
+    qDebug() << "Clicked on new! " << fileName;
+    QString dayOfWeek = QDate::currentDate().dayOfWeek();
+    QDate date(QDate::currentDate());
+
+
+    QFile file(filePath + fileName);
+    qDebug() << "copying new file: " << filePath + fileName << " to : " << filePath + date.toString("dddd") + fileName;
+
+    if (file.copy(filePath + date.toString("dddd") + fileName)) qDebug() << "file copying sucsecsfull";
+    else{
+        qDebug() << "file already exist";
+        return;
+    }
+
+    file.remove();
+
 
     // TODO:    Reset table function
     model->clear();
@@ -157,13 +202,22 @@ void Dialog::on_exit_clicked()
 
 void Dialog::on_file_choosed(QString path)
 {
+    //FIXME:    Need to recheck path
+    QFileInfo fi(path);
+    fileName = fi.fileName();
+    filePath = fi.dir().path() + "/";
 
-    qDebug() << "File path recived: " << path;
+    qDebug() << "File path recived: " << fi.dir().path() << " fileName:  " << fi.fileName();
+    qDebug() << "watcher.addPath: " << path;
 
-    fileName = path;
-    watcher.addPath(fileName);
+    model->clear();
+    ReadLeaderboard();
+    TableSetup();
+}
 
-    qDebug() << "watcher.addPath: " << fileName;
+void Dialog::on_file_updated()
+{
+    qDebug() << "Leaderboard File updated";
 
     model->clear();
     ReadLeaderboard();
@@ -177,7 +231,7 @@ void Dialog::ReadFile()
 
 
     //Load XML file
-    QFile file(fileName);
+    QFile file(filePath + fileName);
     if(file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         bool isO = document.setContent(&file);
@@ -239,7 +293,7 @@ void Dialog::WriteFile()
     }
 
     //Save to disk
-    QFile file(fileName);
+    QFile file(filePath + fileName);
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
         qDebug() << "Failed to write file";
     }
@@ -251,13 +305,16 @@ void Dialog::WriteFile()
 
 }
 
-void Dialog::LoadXMLFile(QDomDocument doc)
+//TODO:     Remove parameter
+bool Dialog::LoadXMLFile(QDomDocument doc)
 {
+     bool isO = false;
+
     //Load XML file
-    QFile file(fileName);
+    QFile file(filePath + fileName);
     if(file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        bool isO = document.setContent(&file);
+        isO = document.setContent(&file);
         file.close();
 
         file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -265,14 +322,23 @@ void Dialog::LoadXMLFile(QDomDocument doc)
 
         qDebug() << isO << " is Document open ";
         qDebug() << isC << " is CLONE Document open ";
+
+        //File watcher looking when xml updates by other applications
+        watcher.addPath(filePath + fileName);
     }
+    else {
+         qDebug() << "file dosent exist: " << fileName;
+         OpenMessageBox();
+         isO = false;
+    }
+    return isO;
 }
 
 void Dialog::ReadLeaderboard()
 {
     // TODO:   Dont repeat last entry
 
-    LoadXMLFile(document);
+    if (!LoadXMLFile(document)) return;
 
     int elementCount =  document.elementsByTagName("score").count();
     qDebug() << "elemnt count: " << elementCount;
@@ -286,7 +352,8 @@ void Dialog::ReadLeaderboard()
 
     QDomNodeList entryList = tempDoc.elementsByTagName("score");
 
-    while (winnerList.length() < winnerCount) {
+    //Sorting entries by higest score, and adding them to view
+    while (winnerList.length() < winnerCount && winnerList.length() < elementCount) {
         int temp = 0;
 
         for (int x = 0; x < elementCount; ++x) {

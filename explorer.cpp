@@ -20,7 +20,13 @@ Explorer::Explorer(QWidget *parent) :
     ui->listView->setModel(filemodel);
 
 
-    //TODO:     go to default (appdata) or last location
+    //TODO:     go to default (appdata) or last location. Check if file exist
+     ui->listView->setRootIndex(filemodel->setRootPath("C:/Private/test"));
+     dirmodel->setRootPath("C:/Private/test");
+
+
+
+
 }
 
 Explorer::~Explorer()
@@ -37,7 +43,7 @@ QString FileChoosed(QString path){
 void Explorer::on_treeView_clicked(const QModelIndex &index)
 {
 
-
+     qDebug() << &index << " Model index";
     QString sPath = dirmodel->fileInfo(index).absoluteFilePath();
     ui->listView->setRootIndex(filemodel->setRootPath(sPath));
 }
